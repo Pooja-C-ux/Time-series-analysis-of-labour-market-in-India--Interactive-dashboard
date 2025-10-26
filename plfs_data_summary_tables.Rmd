@@ -1,0 +1,344 @@
+---
+title: "plfs_data_summary_tables"
+author: "ss"
+date: "2025-10-26"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath("C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/cleaned_files"))
+```
+
+
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(srvyr)
+```
+
+
+#Overview
+
+
+
+#Years abbreviation
+```{r}
+yrs<-c("17_18","18_19","19_20","20_21","21_22","22_23","23_24")
+
+```
+
+
+# -----------------1. Read the files
+```{r}
+#Read the files
+df_list <- list()
+for (i in yrs){
+  
+  file_name<-paste0("./plfs_recoded",i,".csv")
+  temp<-read_csv(file_name,show_col_types = FALSE)
+  
+  df_list[[i]]<-temp
+
+  for (nm in names(df_list)) {
+  varname <- paste0("per", nm)
+  assign(varname, df_list[[nm]], envir = .GlobalEnv)
+}
+}
+
+
+```
+
+#----------------2.Subsetting data (Aged 15 and above and deselecting third gender)
+```{r}
+for (i in yrs){
+  file_name<-paste0("per",i)
+  if(exists(file_name)){
+    
+#Getting the df    
+    df<-get(file_name)
+    
+#Subsetting age>=15 and deleting third gender
+    df<- df %>% 
+  filter(sex!="third_gender") %>% 
+  filter(age>=15)
+
+  varname <- paste0("per_sub", i)
+  assign(varname,df, envir = .GlobalEnv)
+}
+}
+```
+
+
+
+
+#----------------1.Labour Market Statewise and gender wise indicators (WPR,LFPR,UR)-------
+
+```{r}
+
+#Define function
+emp_rate<-function(x){round(100*(survey_mean(x,vartype = NULL, na.rm = TRUE)),1)}
+lfpr_rate<-function(y){round(100*(survey_mean(y,vartype = NULL, na.rm = TRUE)),1)}
+ur_rate<-function(x,y){ round(100 * survey_ratio(x,(x+y),vartype = NULL,na.rm = TRUE), 1) }
+
+labour_mkt_indicators_table_list<-list()
+
+
+for (i in yrs){
+  file_name<-paste0("per_sub",i)
+  if(exists(file_name)){
+    
+#Getting the df    
+    df<-get(file_name)
+    
+#Assigning weights
+srv <- df%>% as_survey_design(weights = mult)
+
+t1<- srv %>%   #All India
+summarize(employment_rate = emp_rate(employed_ps_ss),
+          labourforce_rate=lfpr_rate(labourforce_ps_ss),
+          unemployment_rate=ur_rate(unemployed_ps_ss,employed_ps_ss)) %>% 
+  mutate(year=unique(df$year),sex="All") 
+
+
+t2<- srv %>%   #All India by sex
+  group_by(sex) %>% 
+summarize(employment_rate = emp_rate(employed_ps_ss),
+          labourforce_rate=lfpr_rate(labourforce_ps_ss),
+          unemployment_rate=ur_rate(unemployed_ps_ss,employed_ps_ss)) %>% 
+  mutate(year=unique(df$year)) 
+  
+
+output_table<-t1 %>% bind_rows(t2)
+
+labour_mkt_indicators_table_list[[as.character(i)]]<-output_table
+
+ }
+  else{warning(paste("Data frame does not exist:", file_name))}
+}
+
+lb_mkt_panel<-dplyr:: bind_rows(labour_mkt_indicators_table_list)
+
+
+write.csv(lb_mkt_panel,file = "C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/output_files/labour_mkt_indicators_india_time.csv",row.names = FALSE)
+
+```
+
+
+
+
+
+
+#-------------------------2.Share of employment in Agriculture, industry, service
+
+
+```{r}
+
+sectoral_share_list<-list()
+#Define function to find distribution 
+dist<-function(){round(100*survey_prop(vartype =NULL,na.rm = TRUE),1)}
+
+for (i in yrs){
+  file_name<-paste0("per_sub",i)
+  if(exists(file_name)){
+    
+#Getting the df    
+    df<-get(file_name)
+ 
+#Assigning weights
+srv <- df %>% filter(employed_ps_ss==1) %>% as_survey_design(weights = mult)
+
+
+t1<-srv %>%   #All india by industry
+   group_by(industry) %>% 
+   summarize(distribution=dist()) %>% 
+  mutate(state="All India",year=unique(df$year), sex="All")
+
+t2<-srv %>%   #All india by industry by sex
+   group_by(sex,industry) %>% 
+   summarize(distribution=dist()) %>% 
+  mutate(state="All India",year=unique(df$year))
+
+
+#Bind tables
+output_table_sec<-t1 %>% bind_rows(t2)
+
+sectoral_share_list[[as.character(i)]]<-output_table_sec
+  }
+}
+
+sectoral_share_panel<-bind_rows(sectoral_share_list)
+
+write.csv(sectoral_share_panel,
+          file = "C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/output_files/sectoral_share_india_time.csv",row.names = FALSE)
+```
+
+
+#---------------------------3.Distribution by employment type  -----
+```{r}
+
+emp_type_list<-list()
+#Define function to find distribution
+dist<-function(){round(100*survey_prop(vartype =NULL,na.rm = TRUE),1)}
+
+for (i in yrs ){
+  file_name<-paste0("per_sub",i)
+  if(exists(file_name)){
+
+#Getting the df
+    df<-get(file_name)
+
+#Assigning weights
+srv <- df %>% filter(!is.na(emp_usual_status))  %>% as_survey_design(weights = mult)
+
+
+t1<-srv %>%   #All india by industry
+   group_by(emp_usual_status) %>%
+   summarize(distribution=dist()) %>%
+  mutate(state="All India",year=unique(df$year), sex="All")
+
+t2<-srv %>%   #All india by industry by sex
+   group_by(sex,emp_usual_status) %>%
+   summarize(distribution=dist()) %>%
+  mutate(state="All India",year=unique(df$year))
+
+
+#Bind tables
+output_table_emp<-t1 %>% bind_rows(t2)
+
+emp_type_list[[as.character(i)]]<-output_table_emp
+
+  }
+}
+
+emp_type_time<-bind_rows(emp_type_list)
+
+write.csv(emp_type_time,
+          file = "C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/output_files/emp_type_time.csv",row.names = FALSE)
+
+```
+
+
+
+#---------------------------Summary tables for employment elasticity calculation
+#----------------------1.Finding Absolute labour force and employed--
+```{r}
+
+#empty list
+total_labour_list<-list()
+total_employed_list<-list()
+
+#Finding total labourforce
+for (i in yrs){
+  file_name<-paste0("per_sub",i)
+  if(exists(file_name)){
+    
+#Getting the df    
+    df<-get(file_name)
+    
+#Assigning weights
+srv <- df%>% as_survey_design(weights = mult)
+
+#-------------Total Labourforce----
+#India
+total_labour_india<- srv %>% 
+summarize(total_labour = survey_total(labourforce_ps_ss, na.rm = TRUE,vartype = NULL)) %>% 
+  mutate(state="All India") %>% 
+  mutate(year=unique(df$year))
+
+#States
+total_labour_state<- srv %>% 
+group_by(state) %>% 
+summarize(total_labour = survey_total(labourforce_ps_ss, na.rm = TRUE,vartype = NULL)) %>% 
+mutate(year=unique(df$year))
+
+#Combining
+total_labour_overall<-total_labour_state %>% 
+  rbind(total_labour_india) %>% 
+  mutate(year_num=i)
+
+total_labour_list[[as.character(i)]]<-total_labour_overall
+
+#-----------Total Employed---
+
+#India
+total_employed_india<- srv %>%
+summarize(total_employed = survey_total(employed_ps_ss, na.rm = TRUE,vartype = NULL)) %>%
+  mutate(state="All India") %>%
+  mutate(year=unique(df$year))
+
+#State
+total_employed_state<- srv %>%
+group_by(state) %>%
+summarize(total_employed = survey_total(employed_ps_ss, na.rm = TRUE,vartype = NULL)) %>%
+mutate(year=unique(df$year))
+
+#Combined
+total_employed_overall<-total_employed_state %>%
+  rbind(total_employed_india) %>%
+  mutate(year_num=i)
+
+#saving
+total_employed_list[[as.character(i)]]<-total_employed_overall
+
+  }
+}
+
+
+```
+
+#-------------------------2. LF and employed annual growth rate
+
+```{r}
+# unique(total_labour_force_panel$state)
+# total_labour_force_panel %>% 
+#   filter(!state==c("Daman & Diu","A & N Island", "D & N. Haveli & Daman & Diu","Lakshadweep","D & N Haveli", "Puducherry","Delhi","Chandigarh"))
+total_labour_force_panel %>% 
+  arrange(year) %>% 
+  group_by(state) %>% 
+  mutate(gr=(total_labour/(dplyr::lag(total_labour)))-1) %>% 
+  mutate(growth=growth_formula(total_labour))
+```
+
+
+```{r}
+#Labour force and employed
+
+growth_formula<-function(x){
+  lag_val<-dplyr::lag(x)  #lag
+  y<-100 * (
+    (x/lag_val)-1
+    )                   #growth formula
+  z<-round(y,2)       #round off
+}
+
+
+total_labour_force_panel <- bind_rows(total_labour_list) %>% 
+  select(-"year_num")
+total_employed_panel<-bind_rows(total_employed_list) %>% 
+  select(-"year_num")
+
+#LF growth
+total_labour_force_panel<-total_labour_force_panel %>% 
+  group_by(state) %>% 
+  mutate(LF_growth =growth_formula(total_labour))
+
+#Emp_growth
+total_employed_panel<-total_employed_panel %>% 
+    group_by(state) %>% 
+  mutate(emp_growth = growth_formula(total_employed))
+
+LF_emp_panel<-total_labour_force_panel %>% 
+left_join(total_employed_panel, by=c("state","year"))
+  
+
+#----Saving the absolute LF, employed as panel and finding LF Growth rate
+write.csv(LF_emp_panel,file = "C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/output_files/LF_emp_panel.csv",row.names = FALSE)
+
+
+```
+
+
+

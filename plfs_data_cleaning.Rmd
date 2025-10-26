@@ -1,0 +1,412 @@
+---
+title: "PLFS_data_wrangling"
+author: "Pooja"
+date: "2025-09-16"
+output: pdf_document
+---
+
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(forcats)
+```
+
+#---------------------------Importing datasets
+```{r}
+
+#SEtting up working directory
+wd<-"C:/Users/LENOVO/OneDrive/writing samples/plfs"
+
+#Creating years sequence and to import file
+start <- 2017
+end <- 2023
+yrs <- sprintf("%d-%02d", start:(end), (start+1):(end+1)%% 100)
+print(yrs)
+
+start2 <- 17
+end2 <- 24
+yrs2 <- sprintf("%02d_%02d", (start2:(end2-1)) %% 100, ((start2:(end2-1)) + 1) %% 100)
+print(yrs2)
+
+df_list <- list() 
+for (k in seq_along(yrs)) {
+  yr_full <- yrs[k]
+  yr_short <- yrs2[k]
+  fpath <- paste0(wd, "/plfs_raw_data/", yr_full, "/per_", yr_short, ".txt")
+
+print(fpath)
+
+  tmp <- read.delim(fpath, header = FALSE, stringsAsFactors = FALSE)
+  
+  # Store under a name, e.g. the year short name
+  df_list[[ yr_short ]] <- tmp
+
+}
+
+
+#Getting in data in dataframe
+
+for (nm in names(df_list)) {
+  varname <- paste0("per", nm)
+  assign(varname, df_list[[nm]], envir = .GlobalEnv)
+}
+
+```
+#-------------Standardising colnames---------
+
+#Loading data variables names and abbreviation file 
+```{r}
+
+
+names1 <- read_excel("C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/data_cleaning/data_variables_names.xlsx", 
+    sheet = "names17_18")
+
+
+names2 <- read_excel("C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/data_cleaning/data_variables_names.xlsx", 
+    sheet = "names20_21")
+
+names3 <- read_excel("C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/data_cleaning/data_variables_names.xlsx", 
+    sheet = "names21_22")
+
+names4 <- read_excel("C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/data_cleaning/data_variables_names.xlsx", 
+    sheet = "names23_24")
+
+```
+
+
+```{r}
+
+#Renaming colnames
+names(per17_18)<-names1$names
+names(per18_19)<-names1$names
+names(per19_20)<-names1$names
+
+names(per20_21)<-names2$names
+
+names(per21_22)<-names3$names
+
+names(per22_23)<-names4$names
+names(per23_24)<-names4$names
+
+#Create a copy of files
+yrs2
+for (i in yrs2){
+  original<-paste0("per",i)
+  copy <- paste0("percopy_", i)
+ assign(copy, get(original))
+}
+```
+
+
+#--------------------------Data subsetting------
+```{r}
+#Add year column
+
+
+
+for (i in yrs2){
+  file_name<-paste0("percopy_",i)
+  if(exists(file_name)){
+    df<-get(file_name)
+    df<-df %>% mutate(year=i) #Add a year column
+    df<-df %>%rename_with(~ str_remove_all(.x, regex("(?i)_?v\\d+_?")))  #remove prefix(p1,p2)
+    assign(file_name,df,envir = .GlobalEnv)
+  }
+  else{warning(paste("Data frame does not exist:", file_name))}
+}
+
+```
+
+
+#--------------------------------Subsetting data
+
+```{r}
+
+for (i in yrs2){
+  file_name<-paste0("percopy_",i)
+  if(exists(file_name)){
+    df<-get(file_name)
+    
+    df<- df %>% select(FILE_ID,	SCH,	QTR,	VISIT,	SEC,	ST,	DC,	SSU,	SRL,	REL,	SEX,	AGE,	MARST,	GEDU_LVL,	TEDU_LVL,	FORM_EDU,	PAS,	IND_PAS,	OCU_PAS,	HAS_SAS,	LOC_PAS,	ETYP_PAS,	WRKR_PAS,	JOB_PAS,	LEAVE_PAS,	SSEC_PAS,	SAS,	IND_SAS,	OCU_SAS,	LOC_SAS,	ETYP_SAS,	WRKR_SAS,	JOB_SAS,	LEAVE_SAS,	SSEC_SAS,	year,MULT)  #
+    
+    
+ newnames<-c("file_id",	"schedule",	"quarter",	"visit",	"sector",	"state_ut_code",	"district code",	"sample_hh_num",	"person_num",	"relationship",	"sex",	"age",	"marital_status",	"gen_edu_level",	"tec_edu_level",	"num_formal_educ",	"principal_status",	"ind_pas",	"ocu_pas",	"has_subsidiary",	"loc_pas",	"etyp_pas",	"wrkr_pas",	"job_type_pas",	"paid_leave_pas",	"social_security_pas",	"subsidiary_status",	"ind_sas",	"ocu_sas",	"loc_sas",	"etyp_sas",	"wrkr_sas",	"job_type_sas",	"paid_leave_sas",	"social_security_sas",	"year",	"mult")
+ 
+ df<-df %>% 
+   rename_with(~newnames)
+ 
+    df_subset<-paste0("per","_subset",i)
+    assign(df_subset,df,envir = .GlobalEnv)
+    
+  
+  }
+    else{warning(paste("Data frame does not exist:", file_name))}
+}
+
+
+```
+
+
+#-------------------Recoding
+
+```{r}
+
+for (i in yrs2){
+  file_name<-paste0("per","_subset",i)
+  if(exists(file_name)){
+    df<-get(file_name)
+    
+df<-df %>% 
+  
+  #Changing as factor
+  mutate(across(c("sector","sex",	"marital_status",	"gen_edu_level",	"num_formal_educ",	"principal_status",	"ind_pas",	"ocu_pas",	"has_subsidiary",	"loc_pas",	"etyp_pas",	"wrkr_pas",	"job_type_pas",	"paid_leave_pas",	"social_security_pas",	"subsidiary_status",	"ind_sas",	"ocu_sas",	"loc_sas",	"etyp_sas",	"wrkr_sas",	"job_type_sas",	"paid_leave_sas",	"social_security_sas","state_ut_code"),as.factor)) %>% 
+  
+  #Recoding variables-sector, sex,marital_status
+  mutate(sector=fct_recode(sector,"Rural"="1","Urban"="2")) %>% 
+  mutate(sex=fct_recode(sex,"Male"="1","Female"="2","third_gender"="3")) %>% 
+  mutate(marital_status=fct_recode(marital_status,"Never married"="1","Currently married"= "2",
+                                   "Widowed" ="3","Divorced/Separated"="4")) %>% 
+
+
+ #Creating education categories
+
+  mutate(gen_edu_level=as.numeric(as.character(gen_edu_level))) %>% 
+  mutate(educ_cat=case_when(
+                 gen_edu_level %in% c(1,2,3,4)~"Illiterate and literate without formal sch",
+                            gen_edu_level %in% c(5,6)~"Primary and below primary",
+                            gen_edu_level %in% c(7)~"Middle",
+                            gen_edu_level %in% c(8)~"Secondary",
+                            gen_edu_level %in% c(10)~"Secondary",
+                            gen_edu_level %in% c(11)~"diploma",
+                            gen_edu_level %in% c(12)~"Graduate",
+                            gen_edu_level %in% c(13)~"Post graduate and above")) %>% 
+  mutate(educ_cat=factor(educ_cat,
+                         levels = c("Illiterate and literate without formal sch",
+                                    "Primary and below primary","Middle",
+                                    "Secondary","Graduate","Post graduate and above","diploma"))) %>% 
+    
+  #Age categories
+  mutate(age_cat=case_when(age %in% c(15:29)~"young workforce (15-29)",
+                           age %in% c(30:59)~"Middle Aged (30-50)",
+                           age>=60 ~"60 and above")) %>% 
+  mutate(age_cat=factor(age_cat,
+                        levels = c("young workforce (15-29)",
+                                   "Middle Aged (30-50)",
+                                   "60 and above"))) %>% 
+
+ #Employment status
+  mutate(employed_ps_ss=case_when(principal_status %in% c(11,12,21,31,41,51)|
+                              subsidiary_status %in% c(11,12,21,31,41,51)~1,
+                            principal_status %in% c(81)~0,
+                            TRUE~0)) %>% 
+  
+  mutate(labourforce_ps_ss=case_when(principal_status %in% c(11,12,21,31,41,51,81)|
+                              subsidiary_status %in% c(11,12,21,31,41,51)~1,
+                            principal_status %in% c(81)~0,
+                            TRUE~0)) %>% 
+  mutate(unemployed_ps_ss=case_when(principal_status %in% c(81)&
+                              !(subsidiary_status %in% c(11,12,21,31,41,51))~1,
+                            TRUE~0)) %>% 
+  
+  #Employment category---getiing both principal,subsidiary and usual status
+  mutate(
+    subsidiary_cat = case_when(
+      subsidiary_status %in% c(11,12) ~ "Self employed",
+      subsidiary_status == 21        ~ "Unpaid family worker",
+      subsidiary_status == 31        ~ "Regular salaried",
+      subsidiary_status %in% c(41,51) ~ "Casual labour",
+      TRUE                           ~ NA_character_
+    ),
+    principal_cat = case_when(
+      principal_status %in% c(11,12)  ~ "Self employed",
+      principal_status == 21          ~ "Unpaid family worker",
+      principal_status == 31          ~ "Regular salaried",
+      principal_status %in% c(41,51)  ~ "Casual labour",
+      principal_status %in% c(81:99) ~ NA_character_,
+      TRUE                            ~ NA_character_
+    ),
+    emp_usual_status = coalesce(principal_cat, subsidiary_cat)
+  )%>% 
+  
+  #Coding major sectors- Agriculture, Industry, Tertiary
+  mutate(ind_pas = str_pad(ind_pas, width = 5, side = "left", pad = "0")) %>% #Make it 5 digit (principal)
+  mutate(ind_sas = str_pad(ind_sas, width = 5, side = "left", pad = "0")) %>% #Make it 5digit (subsidiary)
+  mutate(
+    code_to_use =ifelse(!is.na(ind_pas),ind_pas,ind_sas),
+    
+    industry=case_when(
+    str_detect(code_to_use, "^0[1-3]") ~ "Agriculture",                     # 01-03
+    str_detect(code_to_use, "^0[5-9]|^[1-3][0-9]|^4[0-3]") ~ "Secondary", # 05-43
+    str_detect(code_to_use, "^4[4-9]|^[5-9][0-9]") ~ "Tertiary",          # 44-99
+    TRUE ~ NA_character_                                       # catch any unmatche
+  ))
+
+df_recoded<-paste0("per","_recoded",i)
+    assign(df_recoded,df,envir = .GlobalEnv)
+    
+ 
+  }
+    else{warning(paste("Data frame does not exist:", file_name))}
+}
+
+```
+
+
+#State name coding
+```{r}
+#Note-PLFS 17_18 to 20_21 state names and codes are similar. 
+#21_22 to 23_24- Daman Diu and D &N are merged (25 and 26) and Ladakh is added.
+#unique(per_recoded17_18$state_ut_code)
+
+for (i in c("17_18","18_19","19_20","20_21")){
+   file_name<-paste0("per_recoded",i)
+  if(exists(file_name)){
+    df<-get(file_name)
+ df<-df %>% 
+  mutate(state=fct_recode(state_ut_code,
+    "Jammu & Kashmir"="1",
+"Himachal Pradesh"="2",
+"Punjab"="3",
+"Chandigarh"="4",
+"Uttrakhand"="5",
+"Haryana"="6",
+"Delhi"="7",
+"Rajasthan"="8",
+"Uttar Pradesh"="9",
+"Bihar"="10",
+"Sikkim"="11",
+"Arunachal Pradesh"="12",
+"Nagaland"="13",
+"Manipur"="14",
+"Mizoram"="15",
+"Tripura"="16",
+"Meghalaya"="17",
+"Assam"="18",
+"West Bengal"="19",
+"Jharkhand"="20",
+"Odisha"="21",
+"Chhattisgarh"="22",
+"Madhya Pradesh"="23",
+"Gujarat"="24",
+"Daman & Diu"="25",
+"D & N Haveli"="26",
+"Maharashtra"="27",
+"Andhra Pradesh"="28",
+"Karnataka"="29",
+"Goa"="30",
+"Lakshadweep"="31",
+"Kerala"="32",
+"Tamil Nadu"="33",
+"Puducherry"="34",
+"A & N Island"="35",
+"Telangana"="36")) 
+ 
+df_recoded<-paste0("per","_recoded",i)
+    assign(df_recoded,df,envir = .GlobalEnv)
+} else{warning(paste("Data frame does not exist:", file_name))
+  
+}
+}
+
+
+
+#-----------------
+
+for (i in c("21_22","22_23","23_24")){
+   file_name<-paste0("per_recoded",i)
+  if(exists(file_name)){
+    df<-get(file_name)
+ df<-df %>% 
+  mutate(state=fct_recode(state_ut_code,
+   "Jammu & Kashmir"="1",
+"Himachal Pradesh"="2",
+"Punjab"="3",
+"Chandigarh"="4",
+"Uttrakhand"="5",
+"Haryana"="6",
+"Delhi"="7",
+"Rajasthan"="8",
+"Uttar Pradesh"="9",
+"Bihar"="10",
+"Sikkim"="11",
+"Arunachal Pradesh"="12",
+"Nagaland"="13",
+"Manipur"="14",
+"Mizoram"="15",
+"Tripura"="16",
+"Meghalaya"="17",
+"Assam"="18",
+"West Bengal"="19",
+"Jharkhand"="20",
+"Odisha"="21",
+"Chhattisgarh"="22",
+"Madhya Pradesh"="23",
+"Gujarat"="24",
+"D & N. Haveli & Daman & Diu"="25",
+"Maharashtra"="27",
+"Andhra Pradesh"="28",
+"Karnataka"="29",
+"Goa"="30",
+"Lakshadweep"="31",
+"Kerala"="32",
+"Tamil Nadu"="33",
+"Puducherry"="34",
+"A & N Island"="35",
+"Telangana"="36",
+"Ladakh"="37")) 
+ 
+df_recoded<-paste0("per","_recoded",i)
+    assign(df_recoded,df,envir = .GlobalEnv)
+} else{warning(paste("Data frame does not exist:", file_name))
+  
+}
+}
+
+```
+
+
+```{r}
+per_recoded17_18<-per_recoded17_18 %>% 
+  mutate(year="2017-18")
+
+per_recoded18_19<-per_recoded18_19 %>% 
+  mutate(year="2018-19")
+
+per_recoded19_20<-per_recoded19_20 %>% 
+  mutate(year="2019-20")
+
+per_recoded20_21<-per_recoded20_21 %>% 
+  mutate(year="2020-21")
+
+per_recoded21_22<-per_recoded21_22 %>% 
+  mutate(year="2021-22")
+
+per_recoded22_23<-per_recoded22_23 %>% 
+  mutate(year="2022-23")
+
+per_recoded23_24<-per_recoded23_24 %>% 
+  mutate(year="2023-24")
+```
+
+
+
+#Saving files in CSV format
+```{r}
+for (i in yrs2){
+df_name<-paste0("per","_recoded",i)
+print(df_name)
+df_recoded <- get(df_name)
+
+file_path<-paste0("C:/Users/LENOVO/OneDrive/writing samples/plfs/plfs_time_analysis/cleaned_files/plfs_recoded",i,".csv")
+
+write_csv(x=df_recoded,file=file_path)
+
+}
+
+
+```
+
+
+
+
