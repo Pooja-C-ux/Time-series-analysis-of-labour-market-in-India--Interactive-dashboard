@@ -1,5 +1,5 @@
 # PLFS-time-series--work in progress
-#Dashboard Link https://pooja-c.shinyapps.io/Employment_dashboard_copy/
+#[Dashboard Link https://pooja-c.shinyapps.io/Employment_dashboard_copy/](https://pooja-c.shinyapps.io/Employment_dashboard_copy/) 
 
 This project aims to understand labour market structure in India from the period 2017-18 to 2023-24 using periodic labour force survey. 
 ## Key indicators
