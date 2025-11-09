@@ -18,7 +18,7 @@ This project aims to understand labour market structure in India from the period
  #### DATA SUMMARY TABLES-
  ###### Labour market indicators, Sectoral shares and shares by employment nature has been calculated by different demographic factors like region, gender and age category
  ###### Employment elasticity has been calculated from employment growth and gdp growth
- ######-Package used- srvyr, tidyverse
+ ###### Package used- srvyr, tidyverse
  
  ### DATA VISUALISATION- Interactive dashboard has been constructed
  ##### Created basic layout with three menu- 1. Overview and Key Insights  2. Labour Market Indicators.  3. Employment Elasticity.
