@@ -12,12 +12,13 @@ library(shinydashboard)
 # Two main menu-namely labour market indicators and employment elasticity
 
 # 1. Labour market Indicators-
-# Shows three tabs namely The key indicators, sectoral shares, employment type shares by different demographic factors like gender, region.
+# Shows three tabs namely The key indicators, sectoral shares, shares by employment type by different 
+# demographic factors like gender, region and age category.
 
 # 2.Employment Elasticity- 
 #   -Shows two tabs
-#   -Overview (Compares Plot 1:GDP and employment growth over time
-#                       Plot 2 Employment elasticity overtime)
+#   -Overview (Plot 1:Compares GDP and employment growth over time
+#              Plot 2 Employment elasticity overtime)
 #   -Employment elasticity by states
 
 #-------------------
@@ -553,3 +554,4 @@ req(df3())
 }
 
 shinyApp(ui, server)
+
