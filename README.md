@@ -1,4 +1,4 @@
-# Time series analysis of labour market in India- Interactive dashboard (work in progress)
+# Time series analysis of labour market in India- Interactive dashboard
 [Dashboard Link https://pooja-c.shinyapps.io/Employment_dashboard_copy/](https://pooja-c.shinyapps.io/Employment_dashboard_copy/) 
 
 This project aims to understand labour market structure in India from the period 2017-18 to 2023-24 using periodic labour force survey. 
