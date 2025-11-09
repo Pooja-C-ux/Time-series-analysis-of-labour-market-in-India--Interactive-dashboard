@@ -9,18 +9,21 @@ library(shiny)
 library(shinydashboard)
 
 #-------Structure of dashboard-----------
-# Two main menu-namely labour market indicators and employment elasticity
+# Four main menu-namely labour market indicators and employment elasticity
 
-# 1. Labour market Indicators-
+# 1. Overview and Key Insights
+#- Gives brief introduction and key insights from the dahsboard
+# 2. Labour market Indicators-
 # Shows three tabs namely The key indicators, sectoral shares, shares by employment type by different 
 # demographic factors like gender, region and age category.
 
-# 2.Employment Elasticity- 
+# 3.Employment Elasticity- 
 #   -Shows two tabs
 #   -Overview (Plot 1:Compares GDP and employment growth over time
 #              Plot 2 Employment elasticity overtime)
 #   -Employment elasticity by states
 
+# 4. Appendix- Provided links to relevant R code
 #-------------------
 
 #-----------------------------Section A Labour Market Indicators- India
@@ -554,4 +557,5 @@ req(df3())
 }
 
 shinyApp(ui, server)
+
 
