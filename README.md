@@ -8,10 +8,10 @@ This project aims to understand labour market structure in India from the period
 ###### Shares of employment nature namely self employed, regular salaried,casual labour and unpaid family worker over time.
 
 ## Data processing steps-
- ###### DATA COLLECTION-Employment data has been collected from MOSPI website
- ###### DATA HARMONISATION-
- ####### Data has converted from text to CSV format
- ####### The colnames were standardised across the years
+ #### DATA COLLECTION-Employment data has been collected from MOSPI website
+ #### DATA HARMONISATION-
+ ###### Data has converted from text to CSV format
+ ###### The colnames were standardised across the years
  ####### The categorical variables has been recoded 
  ####### Package used: Tidyverse 
 
